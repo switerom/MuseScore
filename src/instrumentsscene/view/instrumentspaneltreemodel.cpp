@@ -65,6 +65,7 @@ InstrumentsPanelTreeModel::InstrumentsPanelTreeModel(QObject* parent)
 
         updateRearrangementAvailability();
         updateRemovingAvailability();
+        updateToolTipsMessage();
     });
 
     connect(this, &InstrumentsPanelTreeModel::rowsInserted, this, [this]() {
@@ -573,6 +574,11 @@ bool InstrumentsPanelTreeModel::isEmpty() const
     return m_rootItem ? m_rootItem->isEmpty() : true;
 }
 
+bool InstrumentsPanelTreeModel::isInstrumentSelected() const
+{
+    return m_isInstrumentSelected;
+}
+
 QString InstrumentsPanelTreeModel::addInstrumentsKeyboardShortcut() const
 {
     const shortcuts::Shortcut& shortcut = shortcutsRegister()->shortcut(ADD_INSTRUMENTS_ACTIONCODE);
@@ -627,6 +633,16 @@ void InstrumentsPanelTreeModel::updateRearrangementAvailability()
 
     updateMovingUpAvailability(isRearrangementAvailable, selectedIndexList.first());
     updateMovingDownAvailability(isRearrangementAvailable, selectedIndexList.last());
+}
+
+void InstrumentsPanelTreeModel::setIsInstrumentSelected(bool isInstrumentSelected)
+{
+    if (m_isInstrumentSelected == isInstrumentSelected) {
+        return;
+    }
+
+    m_isInstrumentSelected = isInstrumentSelected;
+    emit isInstrumentSelectedChanged(m_isInstrumentSelected);
 }
 
 void InstrumentsPanelTreeModel::updateMovingUpAvailability(bool isSelectionMovable, const QModelIndex& firstSelectedRowIndex)
@@ -690,6 +706,23 @@ void InstrumentsPanelTreeModel::updateRemovingAvailability()
     }
 
     setIsRemovingAvailable(isRemovingAvailable);
+}
+
+void InstrumentsPanelTreeModel::updateToolTipsMessage()
+{
+    QModelIndexList selectedIndexes = m_selectionModel->selectedIndexes();
+    bool isInstrumentSelected = true;
+
+    for (const QModelIndex& index : selectedIndexes) {
+        const AbstractInstrumentsPanelTreeItem* item = modelIndexToItem(index);
+
+        if (item && static_cast<ItemType>(item->type()) == ItemType::STAFF) {
+            isInstrumentSelected = false;
+            break;
+        }
+    }
+
+    setIsInstrumentSelected(isInstrumentSelected);
 }
 
 void InstrumentsPanelTreeModel::setItemsSelected(const QModelIndexList& indexes, bool selected)
